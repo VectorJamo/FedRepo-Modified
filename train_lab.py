@@ -99,7 +99,7 @@ def construct_algo(args):
         raise ValueError("No such fed algo:{}".format(args.algo))
     return FedAlgo
 
-
+# Here, cnt = the number of different settings or values for the hyperparameters that will be used. The specific values is also given where applicable.
 def get_hypers(algo):
     if algo == "fedavg":
         hypers = {
@@ -189,6 +189,8 @@ def get_hypers(algo):
 
 def main_federated(para_dict):
     print(para_dict)
+    # Basically, convert the dictonary containing meta-information into a namedtuple data type which allows us to access the value of a dictonary in object like form
+    # i.e. instead of doing dict['key'] we can access it as dict.key
     param_names = para_dict.keys()
     Args = namedtuple("Args", param_names)
     args = Args(**para_dict)
@@ -209,6 +211,7 @@ def main_federated(para_dict):
     except Exception:
         dir_alpha = None
 
+    # Create a class wrapper for data. This class has functionality to load, split .etc. and perform other operations on the data.
     feddata = FedData(
         dataset=args.dataset,
         split=args.split,
@@ -217,11 +220,17 @@ def main_federated(para_dict):
         dir_alpha=dir_alpha,
         n_max_sam=args.n_max_sam,
     )
-    csets, gset = feddata.construct()
+    # csets = Clients data sets. Create 'n_clients' datasets with above properties. 
+    # gsets = Global data set. The entire dataset.
+    # csets(client datasets) is a dictonary with keys of type integer(clientID) 0 to n_clients-1 and values containing a tuple of (training_set, testing_set) for that specific client.
+    # gset is the global dataset containing the entire dataset.
+    csets, gset = feddata.construct() # Go inside the function to learn more
 
+    # **** THIS DOES NOT GET EXECUTED! (For FedAvg) ******* The try block will fail (perhaps because we dont have args.dset_ratio?)
     try:
         nc = int(args.dset_ratio * len(csets))
         clients = list(csets.keys())
+        print('HEHEHEHEHEHEHEHEHEHEHEHEHEHE')
         sam_clients = np.random.choice(
             clients, nc, replace=False
         )
@@ -251,6 +260,7 @@ def main_federated(para_dict):
     if args.cuda:
         model = model.cuda()
 
+    # Get the algorithmn depending on the meta-information specified above
     FedAlgo = construct_algo(args)
     algo = FedAlgo(
         csets=csets,
@@ -268,28 +278,34 @@ def main_federated(para_dict):
 
 
 def main_cifar_label(dataset, algo):
-    hypers = get_hypers(algo)
+    hypers = get_hypers(algo) # Get the no. of possible values for the hyperparameters and the values themselves (where applicable) in a dictonary form.
 
-    lr = 0.03
-    for net in ["TFCNN", "VGG11", "VGG11-BN"]:
-        for local_epochs in [2, 5]:
-            for j in range(hypers["cnt"]):
-                para_dict = {}
-                for k, vs in default_param_dicts[dataset].items():
-                    para_dict[k] = random.choice(vs)
+    lr = 0.03 # Specify the learning rate.
+    for net in ["TFCNN", "VGG11", "VGG11-BN"]:  # Different types of CNNs. We will train all the differenet clients in in each one of them one-by-one
+        for local_epochs in [2, 5]: # iterate over 2 then 5 only
+            for j in range(hypers["cnt"]): # iterate over the no. of possible values for the hyperparameters 
+                para_dict = {} # Create an empty dict that will hold meta information about the algo used, dataset used, and other info like no. of clients, no. of rounds of training.etc
+                for k, vs in default_param_dicts[dataset].items(): # Iterate over a pre-defined dictonary that contains the meta information for each dataset (click and see )
+                    para_dict[k] = random.choice(vs) # Get a random value for each meta-information (if there exists multiple choices)
 
+                # Set the algo and dataset
                 para_dict["algo"] = algo
                 para_dict["dataset"] = dataset
                 para_dict["net"] = net
                 para_dict["split"] = "label"
 
+                # nc_per_client refers to "no of classes per client" for labeled data
+                # "number of classes per client" refers to how many unique categories or classes of data each client has access to and can contribute during the training process.
+                # If the dataset is for an image classification task with 10 classes (e.g., digits 0-9), and each client has access to 3 consequent classes e.g. {0, 1, 2}, 
+                # then nc_per_client = 3.
                 if dataset == "cifar10":
                     para_dict["nc_per_client"] = 2
                 elif dataset == "cifar100":
-                    para_dict["nc_per_client"] = 20
+                    para_dict["nc_per_client"] = 20 
 
-                para_dict["lr"] = lr
-                para_dict["n_clients"] = 100
+                # Specify other meta informations
+                para_dict["lr"] = lr # Learning rate
+                para_dict["n_clients"] = 100  # Specify the number of total clients.
                 para_dict["c_ratio"] = 0.1
                 para_dict["local_epochs"] = local_epochs
                 para_dict["max_round"] = 1000
@@ -301,10 +317,13 @@ def main_cifar_label(dataset, algo):
                     else:
                         para_dict[key] = values[j]
 
+                # Summarize the meta information
                 para_dict["fname"] = "{}-K100-E{}-Label2-{}-{}.log".format(
                     dataset, local_epochs, net, lr
                 )
 
+                # Once a dictonary containing meta-information about what dataset, which algo(both fed algo and training algo(specified as net)), what hyperparameter values, 
+                # learning rates, rounds, batches .etc are all specified, we move on to the next step.
                 main_federated(para_dict)
 
 # Entry point
@@ -325,6 +344,9 @@ if __name__ == "__main__":
         "fedaws", "moon",
         "perfedavg", "pfedme",
     ]
+
+    # Just a single training algorithm
+    algos = ["fedavg"]
 
     # Just a single dataset 
     for dataset in ["cifar100"]:

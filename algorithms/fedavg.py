@@ -4,14 +4,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from utils import Averager
-from utils import count_acc
-from utils import append_to_logs
-from utils import format_logs
+from utils import Averager # Simple averager
+from utils import count_acc # Counts the model's accuracy
+from utils import append_to_logs # For logging
+from utils import format_logs # For logging
 
-from tools import construct_dataloaders
-from tools import construct_optimizer
-
+from tools import construct_dataloaders # For loading in data in batches
+from tools import construct_optimizer # For specifying the optimizer and loss function
 
 class FedAvg():
     def __init__(
@@ -126,10 +125,10 @@ class FedAvg():
 
             model.train()
             try:
-                batch_x, batch_y = loader_iter.next()
+                batch_x, batch_y = next(loader_iter) # ** Code modified here **
             except Exception:
                 loader_iter = iter(train_loader)
-                batch_x, batch_y = loader_iter.next()
+                batch_x, batch_y = next(loader_iter) # ** Code modified here **
 
             if self.args.cuda:
                 batch_x, batch_y = batch_x.cuda(), batch_y.cuda()

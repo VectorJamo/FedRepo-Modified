@@ -15,7 +15,7 @@ def load_cifar_data(dataset, combine=True):
     params:
     @dataset: "cifar10", "cifar100"
     return:
-    @xs: numpy.array, (n, c, w, h)
+    @xs: numpy.array, (n, c, w, h) 
     @ys: numpy.array, (n, ), 0-9
     """
     train_xs, train_ys = [], []

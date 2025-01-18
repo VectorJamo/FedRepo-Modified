@@ -60,14 +60,14 @@ def save_json(data, fpath):
         data = json.dump(data, fr)
     return data
 
-
+# Just for logging
 def append_to_logs(fpath, logs):
     with open(fpath, "a", encoding="utf-8") as fa:
         for log in logs:
             fa.write("{}\n".format(log))
         fa.write("\n")
 
-
+# Just for logging
 def format_logs(logs):
     def formal_str(x):
         if isinstance(x, int):
@@ -94,21 +94,21 @@ def set_gpu(x):
     os.environ['CUDA_VISIBLE_DEVICES'] = x
     print('using gpu:', x)
 
-
+# Calculate the averages as the values come in (in time averager)
 class Averager():
-
+    
     def __init__(self):
         self.n = 0
         self.v = 0
 
     def add(self, x):
-        self.v = (self.v * self.n + x) / (self.n + 1)
+        self.v = (self.v * self.n + x) / (self.n + 1) 
         self.n += 1
 
     def item(self):
         return self.v
 
-
+# Determines the accuracy of the model's prediction
 def count_acc(logits, label):
     pred = torch.argmax(logits, dim=1)
     if torch.cuda.is_available():

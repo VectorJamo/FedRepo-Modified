@@ -41,7 +41,8 @@ def mmd_rbf_noaccelerate(
     loss = torch.mean(XX + YY - XY - YX)
     return loss
 
-
+# Loading of training and testing data. 
+# DataLoader provides a convenient way to load data in batches, shuffle data, and handle parallel data loading.
 def construct_dataloaders(clients, csets, gset, args):
     train_loaders = {}
     test_loaders = {}
@@ -79,7 +80,7 @@ def construct_dataloaders(clients, csets, gset, args):
 
     return train_loaders, test_loaders, glo_test_loader
 
-
+# Algorithm used to update the parameters of a neural network during training in order to minimize the loss function.
 def construct_optimizer(model, lr, args):
     if args.optimizer == "SGD":
         optimizer = torch.optim.SGD(

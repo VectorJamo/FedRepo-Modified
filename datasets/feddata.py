@@ -170,12 +170,12 @@ class FedData():
             }
         }
         """
-        # unique classes
+        # Get the unique classes(unique labels) in the datatset
         uni_classes = sorted(np.unique(ys))
         seq_classes = []
         for _ in range(self.n_clients):
             np.random.shuffle(uni_classes)
-            seq_classes.extend(list(uni_classes))
+            seq_classes.extend(list(uni_classes)) # Copy the values of uni_classes into seq_classes at the end (extend it (keep adding))
 
         # each class at least assigned to a client
         assert (self.nc_per_client * self.n_clients >= len(uni_classes)), \
@@ -185,7 +185,7 @@ class FedData():
         client_classes = {}
         for k, client in enumerate(range(self.n_clients)):
             client_classes[client] = seq_classes[
-                k * self.nc_per_client: (k + 1) * self.nc_per_client
+                k * self.nc_per_client: (k + 1) * self.nc_per_client # This seemes complicated but is quite straightforward.
             ]
 
         # for a class, how many clients have it
@@ -298,7 +298,7 @@ class FedData():
             test_set = Dataset(
                 cdata["test_xs"], cdata["test_ys"], is_train=False
             )
-            csets[client] = (train_set, test_set)
+            csets[client] = (train_set, test_set) # <-----
 
             if glo_test is False:
                 glo_test_xs.append(cdata["test_xs"])
@@ -331,11 +331,26 @@ class FedData():
             csets, gset = self.construct_datasets(
                 clients_data, FaMnistDataset, test_xs, test_ys
             )
-        elif self.dataset in ["cifar10", "cifar100"]:
+        # Load data and split the data for all the clients
+        elif self.dataset in ["cifar10", "cifar100"]: 
+            # N,C,W,H -> For image data, N, C, W, and H are commonly used to describe the shape of the tensor.
+            # N = batch size(no. of images in a batch), C = number of color channels, H = height, W = width
+            # So, train_xs, and test_xs are 4D tensors of size(N, C, W, H)
+            # Say you want to get the first image's data from the train_xs. train_xs[0] will return a 3D tensor of size(C, W, H) containing C matrices of size W*H for each color channel.
+
+            # The label data (train_ys and test_ys) are tensors of dimension (n, 1). Where, N =  no. of images in that batch(or the no. of labels), and the label themselves (what
+            # the image represents). 
+            # Say you want to get the first image's label value. Then, train_ys[0] will return a 1D tensor containing the integer value representing the actual label
             train_xs, train_ys, test_xs, test_ys = load_cifar_data(
                 self.dataset, combine=False
             )
+            # Split data into N clients, each client has C classes
+            # Returns a dictonary with keys of type integer(client ID) 0 to n_clients-1 and values containing dictonaries of keys: training_xs, traning_ys, testing_xs and training_ys.
             clients_data = self.split_by_label_noniid(train_xs, train_ys)
+
+            # Basically, here you now merge the training_xs and training_ys to create the training_set and the same for the testing dataset for each client.
+            # csets(client datasets) is a dictonary with keys of type integer(clientID) 0 to n_clients-1 and values containing a tuple of (training_set, testing_set) for that specific client.
+            # gset is the global dataset containing the entire dataset.
             csets, gset = self.construct_datasets(
                 clients_data, CifarDataset, test_xs, test_ys
             )
