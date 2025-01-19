@@ -228,18 +228,17 @@ def main_federated(para_dict):
 
     # **** THIS DOES NOT GET EXECUTED! (For FedAvg) ******* The try block will fail (perhaps because we dont have args.dset_ratio?)
     try:
-        nc = int(args.dset_ratio * len(csets))
-        clients = list(csets.keys())
-        print('HEHEHEHEHEHEHEHEHEHEHEHEHEHE')
+        nc = int(args.dset_ratio * len(csets)) 
+        clients = list(csets.keys()) 
         sam_clients = np.random.choice(
             clients, nc, replace=False
-        )
+        ) 
         csets = {
             c: info for c, info in csets.items() if c in sam_clients
         }
 
-        n_test = int(args.dset_ratio * len(gset.xs))
-        inds = np.random.permutation(len(gset.xs))
+        n_test = int(args.dset_ratio * len(gset.xs)) 
+        inds = np.random.permutation(len(gset.xs))       
         gset.xs = gset.xs[inds[0:n_test]]
         gset.ys = gset.ys[inds[0:n_test]]
 
@@ -248,19 +247,21 @@ def main_federated(para_dict):
 
     feddata.print_info(csets, gset)
 
-    # Model
+    # Create the initial global NN model
     model = construct_model(args)
     print(model)
-    print([name for name, _ in model.named_parameters()])
+    print([name for name, _ in model.named_parameters()]) # 'model.named_parameters()' returns a list of tuples containing the name of the parameters and the parameter's value itself.
+    # Gives the total number of trainable parameters in the model.
     n_params = sum([
-        param.numel() for param in model.parameters()
-    ])
+        param.numel() for param in model.parameters() # This list comprehension iterates over all the model parameters and computes the number of elements for each parameter.
+    ]) 
+    
     print("Total number of parameters : {}".format(n_params))
 
     if args.cuda:
         model = model.cuda()
 
-    # Get the algorithmn depending on the meta-information specified above
+    # Get the federated algorithmn depending on the meta-information specified above
     FedAlgo = construct_algo(args)
     algo = FedAlgo(
         csets=csets,
@@ -306,7 +307,7 @@ def main_cifar_label(dataset, algo):
                 # Specify other meta informations
                 para_dict["lr"] = lr # Learning rate
                 para_dict["n_clients"] = 100  # Specify the number of total clients.
-                para_dict["c_ratio"] = 0.1
+                para_dict["c_ratio"] = 0.1 # c_ratio * n_clients = no. of clients that will participate in a single global training round
                 para_dict["local_epochs"] = local_epochs
                 para_dict["max_round"] = 1000
                 para_dict["test_round"] = 10

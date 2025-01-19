@@ -55,13 +55,15 @@ def construct_dataloaders(clients, csets, gset, args):
         assert csets[client][1] is not None, \
             "local test set must not be None in client: {}".format(client)
 
+        # Extract the training_set for each client
         train_loader = DataLoader(
             csets[client][0],
             batch_size=args.batch_size,
             shuffle=True
         )
         train_loaders[client] = train_loader
-
+        
+        # Extract the testing_set for each client
         test_loader = DataLoader(
             csets[client][1],
             batch_size=args.batch_size * 10,
