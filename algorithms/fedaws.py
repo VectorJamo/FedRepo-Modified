@@ -13,24 +13,35 @@ from utils import format_logs
 from tools import construct_dataloaders
 from tools import construct_optimizer
 
-
 class SpreadModel(nn.Module):
     def __init__(self, ws, margin):
         super().__init__()
-        self.ws = nn.Parameter(ws)
-        self.margin = margin
+        self.ws = nn.Parameter(ws) # Make the classifier weights as trainable parameters so that they can be optimized
+        self.margin = margin # Hyperparameter that specifies that minimum value of the cosine distance that is allowed
 
     def forward(self):
-        ws_norm = F.normalize(self.ws, dim=1)
-        cos_dis = 0.5 * (1.0 - torch.mm(ws_norm, ws_norm.transpose(0, 1)))
+        ws_norm = F.normalize(self.ws, dim=1) # Normalize the weights values so that the dot product of two vectors will be equal to their cosine similarity
 
+        # Compute the cosine similarity between all pairs of normalized weight vectors using matrix multiplication.
+        # Here, we subtract with 1 to make the relation between cosine similarity and dot product proportional to each other. 
+        # Cosine distance = 1 - cosine similarity
+        cos_dis = 0.5 * (1.0 - torch.mm(ws_norm, ws_norm.transpose(0, 1)))
+        
+        # Identity matrix of the same shape as the weights matrix
         d_mat = torch.diag(torch.ones(self.ws.shape[0]))
         d_mat = d_mat.to(self.ws.device)
 
+        # Negate the identity matrix(1s replaced with 0 and 0s replaced with 1s) then multiply with the cosine distance matrix.
+        # The reason we do this is that the diagonals of the cos_dis matrix is the cosine distances of two same weights, which we dont need.
         cos_dis = cos_dis * (1.0 - d_mat)
 
+        # if (cos_dis < margin), set to replace with 1(we will to penalize this), else replace with 0
+        # Now, we will have a matrix with only 1s(where we need to penalize) and 0s(Do not penalize) depending on the calculated cosine distances and the margin hyperparameter. 
         indx = ((self.margin - cos_dis) > 0.0).float()
-        loss = (((self.margin - cos_dis) * indx) ** 2).mean()
+        # Finally, Calculate the total loss. Greater the 1s in our matrix(Greater the number of weights that are close), more will be the loss.
+        loss = (((self.margin - cos_dis) * indx) ** 2).mean() # (self.margin - cos_dis): Compute the margin gap(extent of penalization). This is then multiplied by
+        # 'indx' matrix to filter out any weights pairs that do not need to be penalized. Now, we will be left with only the weights that need to be penalized along 
+        # with the extent of penalization. Then, we compute the squard mean of all of them.
         return loss
 
 
@@ -91,6 +102,8 @@ class FedAws():
                 local_models=local_models,
             )
 
+            # This is the only new step in the FedAwS algorithm. Once the aggregated weights have been computed, then we will perform Spreadout Regularization to maximize
+            # the cosine distance between the weight vectors.
             self.update_global_classifier(
                 r=r,
                 model=self.model,
@@ -192,14 +205,18 @@ class FedAws():
 
         global_model.load_state_dict(mean_state_dict, strict=False)
 
+    # The goal of this function is to compute the Spreadout Regularization Loss.
+    # It ensures that the class weight vectors (ws, corresponding to each class) in the classifier layer are well-separated in the embedding space 
+    # by penalizing those that are too close.
     def update_global_classifier(self, r, model):
-        ws = model.classifier.weight.data
+        ws = model.classifier.weight.data # Get the weights of the final classifier layer of the CNN
         sm = SpreadModel(ws, margin=self.args.margin)
 
         optimizer = torch.optim.SGD(
             sm.parameters(), lr=self.args.aws_lr, momentum=0.9
         )
 
+        # Optimize the weights according to the loss
         for _ in range(self.args.aws_steps):
             loss = sm.forward()
 
