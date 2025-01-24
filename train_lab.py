@@ -347,7 +347,7 @@ if __name__ == "__main__":
     ]
 
     # Just a single training algorithm
-    algos = ["fedavg"]
+    algos = ["fedaws"]
 
     # Just a single dataset 
     for dataset in ["cifar100"]:
