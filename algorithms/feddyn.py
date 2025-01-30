@@ -174,7 +174,7 @@ class FedDyn():
                 batch_x, batch_y = loader_iter.next()
             except Exception:
                 loader_iter = iter(train_loader)
-                batch_x, batch_y = loader_iter.next()
+                batch_x, batch_y = next(loader_iter)
 
             if self.args.cuda:
                 batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
