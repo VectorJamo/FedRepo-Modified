@@ -6,18 +6,21 @@ import torch
 from torch.utils import data
 from torchvision import transforms
 
-from paths import digits_fdir
+#from paths import digits_fdir
+from paths import mnist_fdir
 
 from utils import load_pickle
 
 
 def load_mnist_data(dataset, combine=True):
     train_fpath = os.path.join(
-        digits_fdir, "mnist-train-raw.pkl"
+        #digits_fdir, "mnist_train.pkl"
+        mnist_fdir, "mnist_train.pkl"
     )
 
     test_fpath = os.path.join(
-        digits_fdir, "mnist-test-raw.pkl"
+        #digits_fdir, "mnist_test.pkl"
+        mnist_fdir, "mnist_test.pkl"
     )
 
     train_obj = load_pickle(train_fpath)
@@ -54,12 +57,12 @@ class MnistDataset(data.Dataset):
     def __getitem__(self, index):
         raw_img = self.xs[index]
         label = self.ys[index]
-
+        img=raw_img
         # transforms.ToPILImage need (H, W, C) np.uint8 input
-        img = raw_img.transpose(1, 2, 0).astype(np.uint8)
+        #img = raw_img.transpose(1, 2, 0).astype(np.uint8)
 
         # return (C, H, W) tensor
-        img = self.transform(img)
+        #img = self.transform(img)
 
         label = torch.LongTensor([label])[0]
         return img, label

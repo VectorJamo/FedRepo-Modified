@@ -4,6 +4,9 @@ from collections import Counter
 
 from datasets.famnist_data import load_famnist_data, FaMnistDataset
 from datasets.cifar_data import load_cifar_data, CifarDataset
+from datasets.tumor_data import load_tumor_data, TumorDataset
+from datasets.behavioral_data import load_behavioral_data, BehavioralDataset
+from datasets.mnist_data import load_mnist_data, MnistDataset
 
 np.random.seed(0)
 
@@ -51,8 +54,9 @@ class FedData():
         self.n_max_sam = n_max_sam
 
         self.label_dsets = [
-            "famnist",
-            "cifar10", "cifar100"
+            "mnist", "famnist",
+            "cifar10", "cifar100",
+            "tumor4", "tumor2","DAC"
         ]
 
         if dataset in self.label_dsets:
@@ -196,6 +200,7 @@ class FedData():
         classes_cnt = dict(Counter(classes))
 
         # shuffle xs, and ys
+        #print(type(xs))
         n_samples = xs.shape[0]
         inds = np.random.permutation(n_samples)
         xs = xs[inds]
@@ -354,6 +359,33 @@ class FedData():
             csets, gset = self.construct_datasets(
                 clients_data, CifarDataset, test_xs, test_ys
             )
+        elif self.dataset in ["tumor4","tumor2"]: 
+            # Say you want to get the first image's label value. Then, train_ys[0] will return a 1D tensor containing the integer value representing the actual label
+            train_xs, train_ys, test_xs, test_ys = load_tumor_data(
+                self.dataset, combine=False
+            )
+            clients_data = self.split_by_label_noniid(train_xs, train_ys)
+            csets, gset = self.construct_datasets(
+                clients_data, TumorDataset, test_xs, test_ys
+            )
+        elif self.dataset in ["DAC","Swipe","Voice"]: 
+            # Say you want to get the first image's label value. Then, train_ys[0] will return a 1D tensor containing the integer value representing the actual label
+            train_xs, train_ys, test_xs, test_ys = load_behavioral_data(
+                self.dataset, combine=False
+            )
+            clients_data = self.split_by_label_noniid(train_xs, train_ys)
+            csets, gset = self.construct_datasets(
+                clients_data, BehavioralDataset, test_xs, test_ys
+            )
+        elif self.dataset in ["mnist"]: 
+            # Say you want to get the first image's label value. Then, train_ys[0] will return a 1D tensor containing the integer value representing the actual label
+            train_xs, train_ys, test_xs, test_ys = load_mnist_data(
+                self.dataset, combine=False
+            )
+            clients_data = self.split_by_label_noniid(train_xs, train_ys)
+            csets, gset = self.construct_datasets(
+                clients_data, MnistDataset, test_xs, test_ys
+            )
         else:
             raise ValueError("No such dataset: {}".format(self.dataset))
 
@@ -388,7 +420,8 @@ class FedData():
             if cnt >= max_cnt:
                 break
             cnt += 1
-
+        
+        #print(type(gset.xs))
         print(
             "Global Test Set: ", gset.xs.shape,
             gset.xs.max(), gset.xs.min(), Counter(gset.ys)

@@ -13,11 +13,11 @@ from utils import load_pickle
 
 def load_famnist_data(dataset, combine=True):
     train_fpath = os.path.join(
-        famnist_fdir, "train.pkl"
+        famnist_fdir, "famnist_train.pkl"
     )
 
     test_fpath = os.path.join(
-        famnist_fdir, "test.pkl"
+        famnist_fdir, "famnist_test.pkl"
     )
 
     train_xs, train_ys = load_pickle(train_fpath)
@@ -52,10 +52,11 @@ class FaMnistDataset(data.Dataset):
         label = self.ys[index]
 
         # transforms.ToPILImage need (H, W, C) np.uint8 input
-        img = raw_img[:, :, None].astype(np.uint8)
-
+        #img = raw_img[:, :, None].astype(np.uint8)
+        img=raw_img
+        
         # return (C, H, W) tensor
-        img = self.transform(img)
+        #img = self.transform(img)
 
         label = torch.LongTensor([label])[0]
         return img, label
